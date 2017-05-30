@@ -12,8 +12,14 @@ def decision_step(Rover):
     # Example:
     # Check if we have vision data to make decisions with
     if Rover.nav_angles is not None:
+
+        if len(Rover.rock_angles) >= 2:
+            Rover.throttle = 0.05
+            # Set steering to average angle clipped to the range +/- 15
+            Rover.steer = np.clip(np.mean(Rover.rock_angles * 180 / np.pi), -15, 15)
+
         # Check for Rover.mode status
-        if Rover.mode == 'forward': 
+        elif Rover.mode == 'forward':
             # Check the extent of navigable terrain
             if len(Rover.nav_angles) >= Rover.stop_forward:  
                 # If mode is forward, navigable terrain looks good 
