@@ -13,7 +13,21 @@ def decision_step(Rover):
     # Check if we have vision data to make decisions with
     if Rover.nav_angles is not None:
 
-        if len(Rover.rock_angles) >= 2:
+        if Rover.picking_up:
+            # Do nothing
+            Rover.throttle = 0
+
+        elif Rover.near_sample and not Rover.picking_up:
+            if Rover.vel == 0:
+                Rover.brake = 0
+                Rover.send_pickup = True
+                #
+                #Rover.throttle_set += 0.2
+            else:
+                Rover.throttle = 0
+                Rover.brake = Rover.brake_set
+
+        elif len(Rover.rock_angles) >= 2:
             Rover.throttle = 0.05
             # Set steering to average angle clipped to the range +/- 15
             Rover.steer = np.clip(np.mean(Rover.rock_angles * 180 / np.pi), -15, 15)
