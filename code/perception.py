@@ -17,6 +17,36 @@ def color_thresh(img, rgb_thresh=(160, 160, 160)):
     # Return the binary image
     return color_select
 
+# Identify obstacles
+def obstacle_thresh(img, rgb_thresh=(160, 160, 160)):
+    # Create an array of zeros same xy size as img, but single channel
+    color_select = np.zeros_like(img[:,:,0])
+    # Require that each pixel be below all three threshold values in RGB
+    # above_thresh will now contain a boolean array with "True"
+    # where threshold was met
+    below_thresh = (img[:,:,0] < rgb_thresh[0]) \
+                & (img[:,:,1] < rgb_thresh[1]) \
+                & (img[:,:,2] < rgb_thresh[2])
+    # Index the array of zeros with the boolean array and set to 1
+    color_select[below_thresh] = 1
+    # Return the binary image
+    return color_select
+
+# Identify rocks
+def rock_thresh(img, rgb_lower_thresh=(100, 100, 0), rgb_upper_thresh=(210, 210, 55)):
+    # Create an array of zeros same xy size as img, but single channel
+    color_select = np.zeros_like(img[:,:,0])
+    # Require that each pixel be between all three threshold values in RGB
+    # lower_thresh and upper_thresh will now contain a boolean array with "True"
+    # where threshold was met
+    between_thresh = ((img[:,:,0] > rgb_lower_thresh[0]) & (img[:,:,0] < rgb_upper_thresh[0])) \
+                & ((img[:,:,1] > rgb_lower_thresh[1]) & (img[:,:,1] < rgb_upper_thresh[1])) \
+                & ((img[:,:,2] > rgb_lower_thresh[2]) & (img[:,:,2] < rgb_upper_thresh[2]))
+    # Index the array of zeros with the boolean array and set to 1
+    color_select[between_thresh] = 1
+    # Return the binary image
+    return color_select
+
 # Define a function to convert to rover-centric coordinates
 def rover_coords(binary_img):
     # Identify nonzero pixels
@@ -112,6 +142,9 @@ def perception_step(Rover):
         # Example: Rover.vision_image[:,:,0] = obstacle color-thresholded binary image
         #          Rover.vision_image[:,:,1] = rock_sample color-thresholded binary image
         #          Rover.vision_image[:,:,2] = navigable terrain color-thresholded binary image
+    Rover.vision_image[:, :, 0] = obstacle_threshed*255
+    Rover.vision_image[:, :, 1] = rock_threshed*255
+    Rover.vision_image[:, :, 2] = navigable_threshed*255
 
     # 5) Convert map image pixel values to rover-centric coords
     # 6) Convert rover-centric pixel values to world coordinates
