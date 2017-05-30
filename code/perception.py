@@ -147,7 +147,28 @@ def perception_step(Rover):
     Rover.vision_image[:, :, 2] = navigable_threshed*255
 
     # 5) Convert map image pixel values to rover-centric coords
+    navigable_xpix, navigable_ypix = rover_coords(navigable_threshed)
+    obstacle_xpix, obstacle_ypix = rover_coords(obstacle_threshed)
+    rock_xpix, rock_ypix = rover_coords(rock_threshed)
+
     # 6) Convert rover-centric pixel values to world coordinates
+    rover_xpos = Rover.pos[0]
+    rover_ypos = Rover.pos[1]
+    rover_yaw  = Rover.yaw
+    world_size = Rover.worldmap.shape[0]
+    scale = 10
+    navigable_x_world, navigable_y_world = pix_to_world(navigable_xpix, navigable_ypix,
+                                                        rover_xpos, rover_ypos, rover_yaw,
+                                                        world_size, scale)
+
+    obstacle_x_world, obstacle_y_world = pix_to_world(obstacle_xpix, obstacle_ypix,
+                                                      rover_xpos, rover_ypos, rover_yaw,
+                                                      world_size, scale)
+
+    rock_x_world, rock_y_world = pix_to_world(rock_xpix, rock_ypix,
+                                              rover_xpos, rover_ypos, rover_yaw,
+                                              world_size, scale)
+
     # 7) Update Rover worldmap (to be displayed on right side of screen)
         # Example: Rover.worldmap[obstacle_y_world, obstacle_x_world, 0] += 1
         #          Rover.worldmap[rock_y_world, rock_x_world, 1] += 1
