@@ -83,6 +83,12 @@ def create_output_images(Rover):
       # Overlay obstacle and navigable terrain map with ground truth map
       map_add = cv2.addWeighted(plotmap, 1, Rover.ground_truth, 0.5, 0)
 
+      # Plot the car location
+      car_size = 2
+      car_pos_x = np.int_(Rover.pos[0])
+      car_pos_y = np.int_(Rover.pos[1])
+      map_add[car_pos_y-car_size:car_pos_y+car_size, car_pos_x-car_size:car_pos_x+car_size, :] = 255
+
       # Check whether any rock detections are present in worldmap
       rock_world_pos = Rover.worldmap[:,:,1].nonzero()
       # If there are, we'll step through the known sample positions
