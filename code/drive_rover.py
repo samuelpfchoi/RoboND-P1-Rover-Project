@@ -51,6 +51,7 @@ class RoverState():
         self.brake = 0 # Current brake value
         self.nav_angles = None # Angles of navigable terrain pixels
         self.nav_dists = None # Distances of navigable terrain pixels
+        self.nav_visited = None # Visited count of navigable terrain pixels
         self.rock_angles = None # Angles of rock pixels
         self.rock_dists = None # Distance of rock pixels
         self.ground_truth = ground_truth_3d # Ground truth worldmap
@@ -64,6 +65,7 @@ class RoverState():
         self.stop_forward = 50 # Threshold to initiate stopping
         self.go_forward = 500 # Threshold to go forward again
         self.max_vel = 2 # Maximum velocity (meters/second)
+        self.message = '' # Message to be shown in vision image
         # Image output from perception step
         # Update this image to display your intermediate analysis steps
         # on screen in autonomous mode
