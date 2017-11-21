@@ -57,6 +57,15 @@ def rover_coords(binary_img):
     y_pixel = -(xpos - binary_img.shape[0]).astype(np.float)
     return x_pixel, y_pixel
 
+def rover_coords_ex(binary_img):
+    # Identify nonzero pixels
+    ypos, xpos = binary_img.nonzero()
+    # Calculate pixel positions with reference to the rover position being at the
+    # center bottom of the image.
+    x_pixel = np.absolute(ypos - binary_img.shape[0]).astype(np.float)
+    y_pixel = -(xpos - binary_img.shape[0]).astype(np.float)
+    return x_pixel, y_pixel, xpos, ypos
+
 
 # Define a function to convert to radial coords in rover space
 def to_polar_coords(x_pixel, y_pixel):
@@ -142,17 +151,18 @@ def perception_step(Rover):
     obstacle_threshed  = obstacle_thresh(warped)
     rock_threshed = rock_thresh(warped)
 
-
     # 4) Update Rover.vision_image (this will be displayed on left side of screen)
         # Example: Rover.vision_image[:,:,0] = obstacle color-thresholded binary image
         #          Rover.vision_image[:,:,1] = rock_sample color-thresholded binary image
         #          Rover.vision_image[:,:,2] = navigable terrain color-thresholded binary image
-    Rover.vision_image[:, :, 0] = obstacle_threshed*255
-    Rover.vision_image[:, :, 1] = rock_threshed*255
-    Rover.vision_image[:, :, 2] = navigable_threshed*255
+    Rover.vision_image = np.zeros((160, 320, 3), dtype=np.float)
+    # Rover.vision_image[:, :, 0] = obstacle_threshed*255
+    # Rover.vision_image[:, :, 1] = rock_threshed*255
+    # Rover.vision_image[:, :, 2] = navigable_threshed
+    Rover.vision_image[:, :, :] = warped
 
     # 5) Convert map image pixel values to rover-centric coords
-    navigable_xpix, navigable_ypix = rover_coords(navigable_threshed)
+    navigable_xpix, navigable_ypix, navigable_xpos, navigable_ypos = rover_coords_ex(navigable_threshed)
     obstacle_xpix, obstacle_ypix = rover_coords(obstacle_threshed)
     rock_xpix, rock_ypix = rover_coords(rock_threshed)
 
@@ -177,30 +187,110 @@ def perception_step(Rover):
         # Example: Rover.worldmap[obstacle_y_world, obstacle_x_world, 0] += 1
         #          Rover.worldmap[rock_y_world, rock_x_world, 1] += 1
         #          Rover.worldmap[navigable_y_world, navigable_x_world, 2] += 1
-    roll_pitch_lower_limit = 3
+    roll_pitch_lower_limit = 0.8
     roll_pitch_upper_limit = 360 - roll_pitch_lower_limit
     #
     # roll & pitch should be less than lower limit or large than upper limit
     #
     if (Rover.roll < roll_pitch_lower_limit or Rover.roll > roll_pitch_upper_limit) \
             and (Rover.pitch < roll_pitch_lower_limit or Rover.pitch > roll_pitch_upper_limit):
+        #
         Rover.worldmap[obstacle_y_world, obstacle_x_world, 0] += 1
         Rover.worldmap[rock_y_world, rock_x_world, 1] += 1
         Rover.worldmap[navigable_y_world, navigable_x_world, 2] += 1
 
+
     # 8) Convert rover-centric pixel positions to polar coordinates
     nav_dists, nav_angles = to_polar_coords(navigable_xpix, navigable_ypix)
     rock_dists, rock_angles = to_polar_coords(rock_xpix, rock_ypix)
+
+    nav_visited = np.clip(Rover.worldmap[navigable_y_world, navigable_x_world, 2], 1, 1000)
+    nav_visit_time = Rover.visit_map[navigable_y_world, navigable_x_world, 0]
+
+    if (Rover.roll < roll_pitch_lower_limit or Rover.roll > roll_pitch_upper_limit) \
+            and (Rover.pitch < roll_pitch_lower_limit or Rover.pitch > roll_pitch_upper_limit):
+        #
+        region = nav_dists <= 20
+        #
+        region_x_world = navigable_x_world[region]
+        region_y_world = navigable_y_world[region]
+        #
+        unvisited = Rover.visit_map[region_y_world, region_x_world, 0] == 1
+        #
+        Rover.visit_map[region_y_world[unvisited], region_x_world[unvisited], 0] = Rover.time_step
+
+    # Update vision image with visiting time
+    # 1 - indicate the area hasn't visited yet (use 1 instead of 0, since it is better for calculate 1/visiting_time
+    #
+    #Rover.vision_image[navigable_ypos, navigable_xpos, 2] = np.clip(nav_visited/4, 1, 255)
+    if len(navigable_x_world) > 0:
+        #
+        # min_visiting_time = np.min(Rover.visit_map[navigable_y_world, navigable_x_world]) - 1
+        #
+        # Rover.vision_image[navigable_ypos, navigable_xpos, 2] = \
+        #     (255 / (Rover.visit_map[navigable_y_world, navigable_x_world, 0] - min_visiting_time))
+        #
+        #### highligh unvisited regions
+        #
+        region = nav_dists <= 90
+        #
+        region_x_world = navigable_x_world[region]
+        region_y_world = navigable_y_world[region]
+        #
+        unvisited = Rover.visit_map[region_y_world, region_x_world, 0] == 1
+        #
+        region_xpos = navigable_xpos[region]
+        region_ypos = navigable_ypos[region]
+        #
+        Rover.vision_image[region_ypos[unvisited], region_xpos[unvisited], 0] = 0
+        Rover.vision_image[region_ypos[unvisited], region_xpos[unvisited], 1] = 255
+        Rover.vision_image[region_ypos[unvisited], region_xpos[unvisited], 2] = 0
+
+        #### highlight visited heat map
+        #
+        # filter out visited regions
+        visited = Rover.visit_map[region_y_world, region_x_world, 0] > 1
+        if np.sum(visited) > 0:
+            visited_heats = Rover.visit_map[region_y_world[visited], region_x_world[visited], 0]
+            visited_heats_max = np.max(visited_heats)
+            visited_heats_min = np.min(visited_heats)
+            visited_heats_range = visited_heats_max - visited_heats_min
+            if visited_heats_range <= 0:
+                visited_heats = 255
+            else:
+                visited_heats = 255 - (255*(visited_heats - visited_heats_min)/visited_heats_range)
+            #
+            Rover.vision_image[region_ypos[visited], region_xpos[visited], 0] = 0
+            Rover.vision_image[region_ypos[visited], region_xpos[visited], 1] = visited_heats
+            Rover.vision_image[region_ypos[visited], region_xpos[visited], 2] = 255
+
+        #### showing local regions
+        #
+        # region = nav_dists <= 20
+        # #
+        # Rover.vision_image[navigable_ypos[region], navigable_xpos[region], 0] = Rover.vision_image[navigable_ypos[region], navigable_xpos[region], 0] * 0.7
+        # Rover.vision_image[navigable_ypos[region], navigable_xpos[region], 1] = Rover.vision_image[navigable_ypos[region], navigable_xpos[region], 1] * 0.7
+        # Rover.vision_image[navigable_ypos[region], navigable_xpos[region], 2] = 255
+
+        #### Show grid line
+        #
+        # local region
+        cv2.circle(Rover.vision_image, (160, 160), 20, (255,255,255), 2)
+        #
+        # effective region
+        cv2.circle(Rover.vision_image, (160, 160), 90, (255,255,255), 2)
+
 
     # Update Rover pixel distances and angles
         # Rover.nav_dists = rover_centric_pixel_distances
         # Rover.nav_angles = rover_centric_angles
     Rover.nav_dists = nav_dists
     Rover.nav_angles = nav_angles
+    Rover.nav_visited = nav_visited
+    Rover.nav_visit_time = nav_visit_time
+    #
     Rover.rock_dists = rock_dists
     Rover.rock_angles = rock_angles
 
- 
-    
-    
+
     return Rover

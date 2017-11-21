@@ -52,11 +52,12 @@ class RoverState():
         self.nav_angles = None # Angles of navigable terrain pixels
         self.nav_dists = None # Distances of navigable terrain pixels
         self.nav_visited = None # Visited count of navigable terrain pixels
+        self.nav_visit_time = None # Visited time of navigable terrain pixels
         self.rock_angles = None # Angles of rock pixels
         self.rock_dists = None # Distance of rock pixels
         self.ground_truth = ground_truth_3d # Ground truth worldmap
         self.mode = 'forward' # Current mode (can be forward or stop)
-        self.throttle_set = 0.2 # Throttle setting when accelerating
+        self.throttle_set = 0.3 #0.2 # Throttle setting when accelerating
         self.brake_set = 10 # Brake setting when braking
         # The stop_forward and go_forward fields below represent total count
         # of navigable terrain pixels.  This is a very crude form of knowing
@@ -64,12 +65,17 @@ class RoverState():
         # get creative in adding new fields or modifying these!
         self.stop_forward = 50 # Threshold to initiate stopping
         self.go_forward = 500 # Threshold to go forward again
-        self.max_vel = 2 # Maximum velocity (meters/second)
+        self.max_vel = 3 #2 # Maximum velocity (meters/second)
+        self.time_step = 1
+        self.visit_map = np.ones((200, 200, 1), dtype=np.float)
         self.message = '' # Message to be shown in vision image
+        self.looping_count = 0
+        self.looping_steer = 0
+        self.turn_desired_yaw = 0
         # Image output from perception step
         # Update this image to display your intermediate analysis steps
         # on screen in autonomous mode
-        self.vision_image = np.zeros((160, 320, 3), dtype=np.float) 
+        self.vision_image = np.zeros((160, 320, 3), dtype=np.float)
         # Worldmap
         # Update this image with the positions of navigable terrain
         # obstacles and rock samples
@@ -107,6 +113,9 @@ def telemetry(sid, data):
         global Rover
         # Initialize / update Rover with current telemetry
         Rover, image = update_rover(Rover, data)
+
+        # Increment the time step
+        Rover.time_step += 1
 
         if np.isfinite(Rover.vel):
 
