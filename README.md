@@ -25,7 +25,10 @@ This project is modeled after the [NASA sample return challenge](https://www.nas
 
 ### Notebook Analysis
 
+The notebook mainly breakdown the perception process into several small steps, which let us to easily visualize the functionality of the step and effectively parameters tunning or selection of difference methods to acheive the function. The steps includes:
+
 **Perspective Transform**
+
 To transform the camera images coming from the rover to shift them from the rover's view to bird view
 
 Here is the image applied perspective transformation:
@@ -90,7 +93,7 @@ Here is the output result:
 ![png](./writeup_images/output_04.png)
 
 
-The following output video demonstrates the whole result with previous processing steps:
+We also combined the previous processing steps to demonstrates the whole result. The following links to youtube video to show the result:
 
 <p align="center">
     <a href="https://www.youtube.com/watch?v=b4b5K0qPzbw">
@@ -99,5 +102,59 @@ The following output video demonstrates the whole result with previous processin
 </p>
 
 
+### Autonomous Navigation and Mapping
+
+#### How to test the autonomus navigation and mapping
+
+Calling `drive_rover.py` at the command line like this:
+
+```sh
+python drive_rover.py
+```  
+
+Then launch the simulator and choose "Autonomous Mode".  The rover should drive itself now!  It doesn't drive that well yet, but it's your job to make it better!  
+
+#### The perception_step() and decision_step()
+
+**Perception Step**
+
+Bascially, the content of perception_step() is already there when completed the notebook analysis. The notebook help to try the esseintal steps of perception and tunning it parameters.
+
+It included the following several steps:
+1) Define source and destination points for perspective transform
+2) Apply perspective transform
+3) Apply color threshold to identify navigable terrain/obstacles/rock samples
+4) Update Rover.vision_image (this will be displayed on left side of screen)
+5) Convert map image pixel values to rover-centric coords
+6) Convert rover-centric pixel values to world coordinates
+7) Update Rover worldmap (to be displayed on right side of screen)
+8) Update vision image with visiting time
+
+**Decision Step**
+
+The decision step will decide what is current mode and base on the current mode to drive the rover. It contains five mode:
+1) **pickup** - the rover is executing pickup process
+2) **go_to_rock** - when rover near a rock simple, the decision step will switch to go_to_rock mode and drive the rover to the sample
+3) **forward** - moving forward
+4) **turn** - turning direction
+5) **stop** - swith to stop model when reaching corner or obstacle
 
 
+#### Results
+
+The rover is able to map at least 40% of the environment with 60% fidelity (accuracy) against the ground truth and is aslo able to locate and pick up at least one rock sample successfully. 
+
+You may click the image below to view the simulation result.
+
+<p align="center">
+    <a href="https://www.youtube.com/watch?v=5so_vJRIJ5k">
+        <img src="https://img.youtube.com/vi/5so_vJRIJ5k/0.jpg" alt="video output">
+    </a>
+</p>
+
+#### Improvement
+
+There still are many rooms to improve, such as:
+* obstacle avoidance
+* escape from obstacle
+* better algorithm to reduce repeated transverse 
