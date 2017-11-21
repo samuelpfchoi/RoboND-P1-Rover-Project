@@ -155,6 +155,6 @@ You may click the image below to view the simulation result.
 #### Improvement
 
 There still are many rooms to improve, such as:
-* obstacle avoidance
-* escape from obstacle
+* better obstacle avoidance
+* better method to escape from obstacle and sometime the rover would be trapped in obstacles 
 * better algorithm to reduce repeated transverse 
